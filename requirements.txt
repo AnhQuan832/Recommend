@@ -1,9 +1,5 @@
-Flask==3.0.3
-gunicorn==22.0.0
-Werkzeug==3.0.3
-Jinja2
-MarkupSafe
-pandas==2.2.2
-scikit-learn==1.5.0
-python-dotenv==1.0.1
-Flask-RESTful==0.3.10
+Flask
+gunicorn
+pandas
+scikit-learn
+Flask-RESTful
