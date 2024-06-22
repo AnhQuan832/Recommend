@@ -3,7 +3,6 @@ from flask_restful import reqparse, abort, Api, Resource
 from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import NearestNeighbors
 import pandas as pd
-from src.config.swagger import swagger_config, template
 import requests
 import logging
 
