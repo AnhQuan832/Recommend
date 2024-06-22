@@ -1,0 +1,13 @@
+tags:
+  - API
+parameters:
+  - in: path
+    name: short_url
+    required: true
+
+responses:
+  302:
+    description: Redirects to the original link
+
+  404:
+    description: Not found
