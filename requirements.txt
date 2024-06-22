@@ -1,8 +1,8 @@
-Flask==1.1.2
-gunicorn==20.0.4
-Jinja2==2.11.3
-MarkupSafe==1.1.1
-Werkzeug==1.0.1
+Flask==3.0.3
+gunicorn==22.0.0
+Werkzeug==3.0.3
+Jinja2
+MarkupSafe
 pandas==2.2.2
 scikit-learn==1.5.0
 python-dotenv==1.0.1
