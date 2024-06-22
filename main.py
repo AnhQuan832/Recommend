@@ -4,7 +4,6 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import NearestNeighbors
 import pandas as pd
 from src.config.swagger import swagger_config, template
-from flasgger import Swagger, swag_from
 import requests
 import logging
 
@@ -27824,10 +27823,8 @@ item_enc = LabelEncoder()
 category_enc = LabelEncoder()
 user_enc = LabelEncoder()
 knn = NearestNeighbors(metric="cosine", algorithm="brute")
-Swagger(app, config=swagger_config, template=template)
 
 class Recommend(Resource):
-    swag_from("./src/config/short_url.yaml")
     def get(self):
         prepare_data()
         recommend_products = recommend_products_knn(invoice, products, knn)
