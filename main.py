@@ -12,6 +12,7 @@ app = Flask(__name__)
 api = Api(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
+api_url='https://kltn-pescue-production.up.railway.app/api/v1/'
 invoice = [
     {
         "invoiceId": "INVO_32",
@@ -27824,11 +27825,11 @@ user_enc = LabelEncoder()
 knn = NearestNeighbors(metric="cosine", algorithm="brute")
 
 class Recommend(Resource):
-    def get(self):
+    def get(self, product_id):
         prepare_data()
         recommend_products = recommend_products_knn(invoice, products, knn)
-        # r = get_products()
-        return recommend_products
+        r = get_view_by_product(product_id)
+        return r
 
 
 def prepare_data():
@@ -27866,27 +27867,27 @@ def recommend_products_knn(products_df, products, knn_model, top_n=10):
 
 def get_products():
     try:
-        response = requests.get("https://kltn-pescue-production.up.railway.app/api/v1/product")
+        response = requests.get(f'{api_url}product')
         if response.status_code == 200:
             res = response.json()
-            app.logger.info(res['meta'])
             if res['meta']['statusCode'] == '0_2_s':
                 return res['data']['productList']
     except Exception as e:
         return {"message": "Error: " + str(e)}
 
-def get_invoice(user_id):
+def get_view_by_product(product_id):
+    app.logger.info(product_id)
+    url = f'{api_url}data/views-audit-log/{product_id}'
     try:
-        response = requests.get("https://kltn-pescue-production.up.railway.app/api/v1/product")
+        response = requests.get(url, headers={'client-id' : 'PqescSU7WscLlNRvHK2Ew397vBa0b7dr','client-key': 'opIGrWw2u0WBmZHVIyDRqM6t0P2NKE1c'})
         if response.status_code == 200:
             res = response.json()
-            app.logger.info(res['meta'])
             if res['meta']['statusCode'] == '0_2_s':
-                return res['data']['productList']
+                return res['data']['views']
     except Exception as e:
         return {"message": "Error: " + str(e)}
 
-api.add_resource(Recommend, "/recommend")
+api.add_resource(Recommend, "/recommend-product/<product_id>")
 
 if __name__ == "__main__":
     app.run(debug=False)

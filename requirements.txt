@@ -4,3 +4,4 @@ pandas
 scikit-learn
 Flask-RESTful
 requests
+scikit-surprise
