@@ -4,8 +4,8 @@ pandas
 scikit-learn
 Flask-RESTful
 requests
-scikit-surprise
+scikit-surprise==1.1.4
 surprise
-numpy
+numpy==1.8
 urllib3
 scipy
