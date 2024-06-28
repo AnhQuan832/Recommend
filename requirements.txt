@@ -6,3 +6,6 @@ Flask-RESTful
 requests
 scikit-surprise
 surprise
+numpy
+urllib3
+scipy
