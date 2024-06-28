@@ -5,7 +5,4 @@ scikit-learn
 Flask-RESTful
 requests
 scikit-surprise==1.1.4
-surprise
-numpy==1.8
-urllib3
-scipy
+numpy==1.20.3
