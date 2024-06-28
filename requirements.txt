@@ -5,3 +5,4 @@ scikit-learn
 Flask-RESTful
 requests
 scikit-surprise
+surprise

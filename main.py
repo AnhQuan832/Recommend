@@ -1,7 +1,5 @@
-from flask import Flask, jsonify
-from flask_restful import reqparse, abort, Api, Resource
-from sklearn.preprocessing import LabelEncoder
-from sklearn.neighbors import NearestNeighbors
+from flask import Flask
+from flask_restful import  Api, Resource
 import pandas as pd
 import numpy as np
 import requests
