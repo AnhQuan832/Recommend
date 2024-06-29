@@ -6,3 +6,4 @@ Flask-RESTful
 requests
 scikit-surprise
 numpy==1.23.0
+joblib

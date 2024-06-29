@@ -4,10 +4,14 @@ import pandas as pd
 import numpy as np
 import requests
 import logging
-from surprise import Dataset, Reader, KNNBasic
+from surprise import Dataset, Reader, KNNBasic, SVD
 from surprise.model_selection import train_test_split
+import joblib
+import os
 
 
+MODEL_PATH_REC = 'model_rec.pkl'
+MODEL_PATH_SIM = 'model_sim.pkl'
 app = Flask(__name__)
 api = Api(app)
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +24,7 @@ sim_options = {
     'user_based': False  
 }
 
-algo = KNNBasic(sim_options=sim_options)
+
 class Recommend(Resource):
     def get(self, product_id):
         similar_products = get_recommend_product(product_id, num_recommendations=5)
@@ -70,10 +74,10 @@ def generate_random_data(num_users=100, num_products=50, num_invoices=500):
 #         products["category"] / products["category"].max()
 #     )
 
-#     knn.fit(products[["price_category"]])
+#     model.fit(products[["price_category"]])
 
 
-# def recommend_products_knn(products_df, products, knn_model, top_n=10):
+# def recommend_products_model(products_df, products, model_model, top_n=10):
 
 #     user_data = products_df
 
@@ -81,7 +85,7 @@ def generate_random_data(num_users=100, num_products=50, num_invoices=500):
 
 #     user_profile = user_data[["price_category"]].mean().values.reshape(1, -1)
 
-#     distances, indices = knn_model.kneighbors(user_profile, n_neighbors=top_n + 1)
+#     distances, indices = model_model.kneighbors(user_profile, n_neighbors=top_n + 1)
 #     similar_products = indices.flatten()[1:]
 
 #     recommended_product_ids = products.iloc[similar_products]["productId"].values
@@ -131,12 +135,12 @@ def get_recommend_product(product_id,  num_recommendations=5):
         data = Dataset.load_from_df(relevant_invoices[['userId_mapped', 'productId_mapped', 'userId_mapped']], reader)
 
         trainset, testset = train_test_split(data, test_size=0.1)
+        model = load_or_train_model(trainset, MODEL_PATH_REC)
+        model.fit(trainset)
+        inner_id = model.trainset.to_inner_iid(product_id_mapped)
+        neighbors = model.get_neighbors(inner_id, k=num_recommendations)
 
-        algo.fit(trainset)
-        inner_id = algo.trainset.to_inner_iid(product_id_mapped)
-        neighbors = algo.get_neighbors(inner_id, k=num_recommendations)
-
-        neighbors = [algo.trainset.to_raw_iid(inner_id) for inner_id in neighbors]
+        neighbors = [model.trainset.to_raw_iid(inner_id) for inner_id in neighbors]
 
         # neighbors = [list(product_id_map.keys())[list(product_id_map.values()).index(inner_id)] for inner_id in neighbors]
 
@@ -171,22 +175,21 @@ def recommend_similar_products(product_id, num_recommendations=5):
     # Chia tập dữ liệu thành tập huấn luyện và tập kiểm tra
     trainset, testset = train_test_split(data, test_size=0.2)
     
-    # Khởi tạo và huấn luyện mô hình KNNBasic
-    algo = KNNBasic(sim_options={'user_based': False})
-    algo.fit(trainset)
+    model = load_or_train_model(trainset, MODEL_PATH_SIM)
+    model.fit(trainset)
     
     # Kiểm tra nếu product_id tồn tại trong product_id_map
     if product_id not in product_id_map:
         raise ValueError(f"Product ID {product_id} is not part of the trainset")
     
     # Lấy inner_id của product_id
-    inner_id = algo.trainset.to_inner_iid(product_id_map[product_id])
+    inner_id = model.trainset.to_inner_iid(product_id_map[product_id])
     
     # Lấy các hàng xóm gần nhất
-    neighbors = algo.get_neighbors(inner_id, k=num_recommendations)
+    neighbors = model.get_neighbors(inner_id, k=num_recommendations)
     
     # Chuyển đổi inner_id sang raw_id
-    neighbors = [algo.trainset.to_raw_iid(inner_id) for inner_id in neighbors]
+    neighbors = [model.trainset.to_raw_iid(inner_id) for inner_id in neighbors]
     
     # Tạo DataFrame từ danh sách các productId được gợi ý
     neighbors_mapped = [list(product_id_map.keys())[list(product_id_map.values()).index(n)] for n in neighbors]
@@ -194,6 +197,17 @@ def recommend_similar_products(product_id, num_recommendations=5):
     similar_products_json = similar_products['productId'].tolist()
     response = {'listProduct': similar_products_json}
     return response
+
+def load_or_train_model(trainset, model_path):
+    if os.path.exists(model_path):
+        model = joblib.load(model_path)
+    else:
+        model = KNNBasic(sim_options=sim_options)
+        model.fit(trainset)
+        # Save model
+        joblib.dump(model, model_path)
+    return model
+
 
 def get_products():
     try:
