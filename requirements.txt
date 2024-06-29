@@ -5,4 +5,4 @@ scikit-learn
 Flask-RESTful
 requests
 scikit-surprise
-numpy==1.21.1
+numpy
