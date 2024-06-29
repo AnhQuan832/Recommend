@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_restful import  Api, Resource
 import pandas as pd
 import numpy as np
@@ -147,9 +147,9 @@ def get_recommend_product(product_id,  num_recommendations=5):
 
         app.logger.info(similar_products.head())
         similar_products = similar_products.rename(columns={'viewerId': 'userId', 'objectId': 'productId'})
-        similar_products_json = similar_products[['productId', 'categoryName', 'price']].to_json(orient='records')
-
-        return similar_products_json
+        similar_products_json = similar_products['productId'].tolist()
+        response = {'listProduct': similar_products_json}
+        return response
     except Exception as e:
         return {"message": "Error: " + str(e)}
 
@@ -191,8 +191,9 @@ def recommend_similar_products(product_id, num_recommendations=5):
     # Tạo DataFrame từ danh sách các productId được gợi ý
     neighbors_mapped = [list(product_id_map.keys())[list(product_id_map.values()).index(n)] for n in neighbors]
     similar_products = pd.DataFrame(neighbors_mapped, columns=['productId']).merge(product_data, on='productId')
-    similar_products = similar_products[['productId', 'categoryName', 'price']].to_json(orient='records')
-    return similar_products
+    similar_products_json = similar_products['productId'].tolist()
+    response = {'listProduct': similar_products_json}
+    return response
 
 def get_products():
     try:
