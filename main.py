@@ -35,68 +35,6 @@ class SimilarProduct(Resource):
         similar_products = recommend_similar_products(product_id, num_recommendations=5)
         return similar_products
     
-def generate_random_data(num_users=100, num_products=50, num_invoices=500):
-    userIds = np.arange(1, num_users + 1)
-    objectId = np.random.randint(1, 100, size=num_users)
-    viewed_product_data = {
-        'viewerId': userIds,
-        'objectId': objectId
-    }
-    viewed_product = pd.DataFrame(viewed_product_data)
-
-    product_ids = [f'P{i}' for i in range(1, num_products + 1)]
-    category_names = np.random.choice(['Electronics', 'Clothing', 'Accessories', 'Home', 'Toys'], size=num_products)
-    prices = np.round(np.random.uniform(5, 500, size=num_products), 2)
-    product_data = {
-        'productId': product_ids,
-        'categoryName': category_names,
-        'price': prices
-    }
-    product = pd.DataFrame(product_data)
-
-    invoice_userIds = np.random.choice(userIds, size=num_invoices)
-    invoice_product_ids = np.random.choice(product_ids, size=num_invoices)
-    invoice_data = {
-        'userId': invoice_userIds,
-        'productId': invoice_product_ids
-    }
-    invoice = pd.DataFrame(invoice_data)
-
-    return viewed_product, invoice, product
-
-# def prepare_data():
-
-#     products["product"] = item_enc.fit_transform(products["productId"])
-#     products["category"] = category_enc.fit_transform(products["categoryName"])
-
-#     # Build product profile
-#     products["price_category"] = (products["price"] / products["price"].max()) + (
-#         products["category"] / products["category"].max()
-#     )
-
-#     model.fit(products[["price_category"]])
-
-
-# def recommend_products_model(products_df, products, model_model, top_n=10):
-
-#     user_data = products_df
-
-#     user_data = user_data.merge(products, on="productId")
-
-#     user_profile = user_data[["price_category"]].mean().values.reshape(1, -1)
-
-#     distances, indices = model_model.kneighbors(user_profile, n_neighbors=top_n + 1)
-#     similar_products = indices.flatten()[1:]
-
-#     recommended_product_ids = products.iloc[similar_products]["productId"].values
-
-#     purchased_products = products_df["productId"].unique()
-#     final_recommendations = [
-#         prod for prod in recommended_product_ids if prod not in purchased_products
-#     ]
-
-#     return final_recommendations[:top_n]
-
 
 def get_recommend_product(product_id,  num_recommendations=5):
     try:
@@ -107,6 +45,7 @@ def get_recommend_product(product_id,  num_recommendations=5):
         if viewed_product_raw.empty or invoice_data.empty or rating_raw.empty:
             app.logger.info("Empty data", viewed_product_raw.empty , invoice_data.empty , rating_raw.empty)
             return []
+        app.logger.info(invoice_data);
         
         viewed_product_raw = viewed_product_raw.rename(columns={'viewerId': 'userId', 'objectId': 'productId'})
         user_id_map = {id: idx + 1 for idx, id in enumerate(invoice_data['userId'].unique())}
@@ -128,15 +67,15 @@ def get_recommend_product(product_id,  num_recommendations=5):
         product_id_mapped = product_id_map[product_id]
         viewed_product = viewed_product.dropna(subset=['userId_mapped'])
         users_who_viewed = set(viewed_product['userId_mapped'])
-        app.logger.info(rating);
-        app.logger.info(users_who_viewed);
+        # app.logger.info(rating);
+        # app.logger.info(users_who_viewed);
 
         relevant_invoices = rating[rating['userId_mapped'].isin(users_who_viewed)]
-        app.logger.info(relevant_invoices);
+        # app.logger.info(relevant_invoices);
         reader = Reader(rating_scale=(1, 5))  
         data = Dataset.load_from_df(relevant_invoices[['userId_mapped', 'productId_mapped', 'score']], reader)
 
-        trainset, testset = train_test_split(data, test_size=0.1)
+        trainset, testset = train_test_split(data, test_size=0.2)
         model = load_or_train_model(trainset, MODEL_PATH_REC)
         model.fit(trainset)
         predictions = model.test(testset)
