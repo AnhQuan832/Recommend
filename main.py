@@ -40,19 +40,15 @@ def get_recommend_product(product_id,  num_recommendations=5):
     try:
         rating_raw = pd.DataFrame(get_products())
         viewed_product_raw = pd.DataFrame(get_view_by_product(product_id))
-        invoice_data = pd.DataFrame(get_invoices())
         # viewed_product_raw = viewed_product_raw.dropna()
-        if viewed_product_raw.empty or invoice_data.empty or rating_raw.empty:
-            app.logger.info("Empty data", viewed_product_raw.empty , invoice_data.empty , rating_raw.empty)
+        if viewed_product_raw.empty or rating_raw.empty:
+            app.logger.info("Empty data", viewed_product_raw.empty , rating_raw.empty)
             return []
-        app.logger.info(invoice_data);
         
         viewed_product_raw = viewed_product_raw.rename(columns={'viewerId': 'userId', 'objectId': 'productId'})
-        user_id_map = {id: idx + 1 for idx, id in enumerate(invoice_data['userId'].unique())}
+        user_id_map = {id: idx + 1 for idx, id in enumerate(rating_raw['userId'].unique())}
         product_id_map = {id: idx + 1 for idx, id in enumerate(rating_raw['productId'].unique())}
 
-        invoice_data.loc[:, 'userId_mapped'] = invoice_data['userId'].map(user_id_map)
-        invoice_data.loc[:, 'productId_mapped'] = invoice_data['productId'].map(product_id_map)
         viewed_product_raw.loc[:, 'userId_mapped'] = viewed_product_raw['userId'].map(user_id_map)
         viewed_product_raw.loc[:, 'productId_mapped'] = viewed_product_raw['productId'].map(product_id_map)
         rating_raw.loc[:, 'productId_mapped'] = rating_raw['productId'].map(product_id_map)
@@ -77,7 +73,7 @@ def get_recommend_product(product_id,  num_recommendations=5):
 
         trainset, testset = train_test_split(data, test_size=0.2)
         model = load_or_train_model(trainset, MODEL_PATH_REC)
-        model.fit(trainset)
+        # model.fit(trainset)
         predictions = model.test(testset)
         sim_matrix = model.compute_similarities()
         app.logger.info(sim_matrix)
