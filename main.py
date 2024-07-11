@@ -8,7 +8,6 @@ from surprise import Dataset, Reader, KNNBasic, SVD, accuracy, similarities
 from surprise.model_selection import train_test_split
 import joblib
 import os
-from flask_apscheduler import APScheduler
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sklearn.decomposition import TruncatedSVD
