@@ -111,10 +111,10 @@ def get_recommend_product(product_id):
         #
         rating = pd.DataFrame(get_products())
 
-        rating = rating.pivot_table(values='score', index='userId', columns='productId', fill_value=0)
-        rating_matrix = rating.T
+        rating = rating.pivot_table(values='score', index='productId', columns='userId', fill_value=0)
+        rating_matrix = rating
 
-        SVD = TruncatedSVD(n_components=2)
+        SVD = TruncatedSVD(n_components=10)
         decomposed_matrix = SVD.fit_transform(rating_matrix)
         correlation_matrix = np.corrcoef(decomposed_matrix) 
         #
@@ -122,13 +122,15 @@ def get_recommend_product(product_id):
         product_names = list(rating_matrix.index)
         product_ID = product_names.index(product_id)
         correlation_product_ID = correlation_matrix[product_ID]
-        correlation_product_ID
+        print(f"Correlation shape: {correlation_product_ID.shape}")
         corr_score = 0.9
         Recommend = []
         while len(Recommend) < 10:
             Recommend = list(rating_matrix.index[correlation_product_ID > corr_score])
             Recommend.remove(product_id)
             corr_score -= 0.05
+
+        print(f"Corr_score: {corr_score}")
         # similar_products = similar_products.drop_duplicates(subset=['productId'])
         # similar_products_json = similar_products[['productId','score']]
         # recommend = list(rating_matrix.index[top_product_indices])
