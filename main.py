@@ -79,47 +79,65 @@ def train_model(num_recommendations= 40):
 
 def get_recommend_product(product_id):
     try:
-        correlation_matrix, rating_matrix, product_id_map,user_id_map, rating_raw = load_or_train_model()
-        # app.logger.info(rating[['productId_mapped']] == 21)
-        viewed_product_raw = pd.DataFrame(get_view_by_product(product_id))
-        viewed_product_raw = viewed_product_raw.dropna()
-        if viewed_product_raw.empty:
-            app.logger.info("Empty data", viewed_product_raw.empty)
-            return []
-        # app.logger.info(viewed_product_raw)
-        viewed_product_raw = viewed_product_raw.rename(columns={'viewerId': 'userId', 'objectId': 'productId'})
+        # correlation_matrix, rating_matrix, product_id_map,user_id_map, rating_raw = load_or_train_model()
+        # viewed_product_raw = pd.DataFrame(get_view_by_product(product_id))
+        # viewed_product_raw = viewed_product_raw.dropna()
+        # if viewed_product_raw.empty:
+        #     app.logger.info("Empty data", viewed_product_raw.empty)
+        #     return []
+        # viewed_product_raw = viewed_product_raw.rename(columns={'viewerId': 'userId', 'objectId': 'productId'})
     
-        viewed_product_raw.loc[:, 'userId_mapped'] = viewed_product_raw['userId'].map(user_id_map)
-        viewed_product_raw.loc[:, 'productId_mapped'] = viewed_product_raw['productId'].map(product_id_map)
+        # viewed_product_raw.loc[:, 'userId_mapped'] = viewed_product_raw['userId'].map(user_id_map)
+        # viewed_product_raw.loc[:, 'productId_mapped'] = viewed_product_raw['productId'].map(product_id_map)
         
-        viewed_product = viewed_product_raw[['userId_mapped']]
-        #change the userId and productId to mapped values
-        viewed_product = viewed_product.dropna(subset=['userId_mapped'])
-        users_who_viewed = set(viewed_product['userId_mapped'])
-        user_list = list(users_who_viewed)
-        user_list = [int(user_id) for user_id in user_list]
-        product_id_mapped = product_id_map[product_id]
+        # viewed_product = viewed_product_raw[['userId_mapped']]
+        # viewed_product = viewed_product.dropna(subset=['userId_mapped'])
+        # users_who_viewed = set(viewed_product['userId_mapped'])
+        # user_list = list(users_who_viewed)
+        # user_list = [int(user_id) for user_id in user_list]
+        # product_id_mapped = product_id_map[product_id]
 
-        existing_user_ids = rating_matrix.index.tolist()
+        # existing_user_ids = rating_matrix.index.tolist()
 
-        filtered_user_list = [user_id for user_id in user_list if user_id in existing_user_ids]
+        # filtered_user_list = [user_id for user_id in user_list if user_id in existing_user_ids]
 
-        filtered_indices = [existing_user_ids.index(user_id) for user_id in filtered_user_list]
-        filtered_correlation_matrix = correlation_matrix[filtered_indices, :]
+        # filtered_indices = [existing_user_ids.index(user_id) for user_id in filtered_user_list]
+        # filtered_correlation_matrix = correlation_matrix[filtered_indices, :]
 
-        user_similarities = filtered_correlation_matrix[product_id_mapped]
+        # user_similarities = filtered_correlation_matrix[product_id_mapped]
 
-        top_product_indices = np.argsort(user_similarities)[-5:]
-        
-        recommend = list(rating_matrix.index[top_product_indices])
-        # app.logger.info(filtered_correlation_matrix)
-        similar_products = pd.DataFrame(recommend, columns=['productId_mapped']).merge(rating_raw, left_on='productId_mapped', right_on='productId_mapped')
+        # top_product_indices = np.argsort(user_similarities)[-5:]
 
-        similar_products = similar_products.drop_duplicates(subset=['productId'])
-        print(f"similar_products: {similar_products}")
-        similar_products_json = similar_products['productId'].tolist()
-        response = {'listProduct': similar_products_json}
-        # response = {'listProduct': ''}
+        #
+        rating = pd.DataFrame(get_products())
+
+        rating = rating.pivot_table(values='score', index='userId', columns='productId', fill_value=0)
+        rating_matrix = rating.T
+
+        SVD = TruncatedSVD(n_components=2)
+        decomposed_matrix = SVD.fit_transform(rating_matrix)
+        correlation_matrix = np.corrcoef(decomposed_matrix) 
+        #
+
+        product_names = list(rating_matrix.index)
+        product_ID = product_names.index(product_id)
+        correlation_product_ID = correlation_matrix[product_ID]
+        correlation_product_ID
+        corr_score = 0.9
+        Recommend = []
+        while len(Recommend) < 10:
+            Recommend = list(rating_matrix.index[correlation_product_ID > corr_score])
+            Recommend.remove(product_id)
+            corr_score -= 0.05
+        # similar_products = similar_products.drop_duplicates(subset=['productId'])
+        # similar_products_json = similar_products[['productId','score']]
+        # recommend = list(rating_matrix.index[top_product_indices])
+        # similar_products = pd.DataFrame(recommend, columns=['productId_mapped']).merge(rating_raw, left_on='productId_mapped', right_on='productId_mapped')
+
+        # similar_products = similar_products.drop_duplicates(subset=['productId'])
+        # print(f"similar_products: {similar_products}")
+        # similar_products_json = similar_products['productId'].tolist()
+        response = {'listProduct': Recommend[0:9]}
 
         return response
     except Exception as e:
@@ -135,6 +153,17 @@ def load_or_train_model():
         app.logger.info("Model loaded")
     else:
         return over_ride_model()
+    return model, data, product_id_map, user_id_map, rating_raw
+
+def over_ride_model():
+    model, data, product_id_map, user_id_map, rating_raw = train_model()
+    joblib.dump(model, MODEL_PATH_REC)
+    joblib.dump(data, MODEL_PATH_TAB)
+    joblib.dump(product_id_map, DATA_ID_PRODUCT)
+    joblib.dump(rating_raw, DATA_USER)
+    joblib.dump(user_id_map, DATA_ID_USER)
+
+    app.logger.info("Model trained")
     return model, data, product_id_map, user_id_map, rating_raw
 
 
@@ -170,16 +199,6 @@ def get_invoices():
     
 
 
-def over_ride_model():
-    model, data, product_id_map, user_id_map, rating_raw = train_model()
-    joblib.dump(model, MODEL_PATH_REC)
-    joblib.dump(data, MODEL_PATH_TAB)
-    joblib.dump(product_id_map, DATA_ID_PRODUCT)
-    joblib.dump(rating_raw, DATA_USER)
-    joblib.dump(user_id_map, DATA_ID_USER)
-
-    app.logger.info("Model trained")
-    return model, data, product_id_map, user_id_map, rating_raw
 
 api.add_resource(Recommend, "/recommend-product/<product_id>")
 
