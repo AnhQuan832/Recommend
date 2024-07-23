@@ -110,8 +110,14 @@ def get_recommend_product(product_id):
 
         #
         rating = pd.DataFrame(get_products())
+        # viewed_product_raw = pd.DataFrame(get_view_by_product(product_id))
+        # viewed_product_raw = viewed_product_raw.rename(columns={'viewerId': 'userId', 'objectId': 'productId'})
+        # user_list = viewed_product_raw['userId'].unique()
 
         rating = rating.pivot_table(values='score', index='productId', columns='userId', fill_value=0)
+        # print(f"Rating shape: {rating}")
+        # filtered_rating_matrix = rating_matrix.loc[rating_matrix['userId'].isin(user_list)]
+        # print(f"Filtered rating shape: {filtered_rating_matrix}")
         rating_matrix = rating
 
         SVD = TruncatedSVD(n_components=10)
@@ -125,7 +131,7 @@ def get_recommend_product(product_id):
         print(f"Correlation shape: {correlation_product_ID.shape}")
         corr_score = 0.9
         Recommend = []
-        while len(Recommend) < 10:
+        while len(Recommend) < 5:
             Recommend = list(rating_matrix.index[correlation_product_ID > corr_score])
             Recommend.remove(product_id)
             corr_score -= 0.05
@@ -139,7 +145,7 @@ def get_recommend_product(product_id):
         # similar_products = similar_products.drop_duplicates(subset=['productId'])
         # print(f"similar_products: {similar_products}")
         # similar_products_json = similar_products['productId'].tolist()
-        response = {'listProduct': Recommend[0:9]}
+        response = {'listProduct': Recommend[0:4]}
 
         return response
     except Exception as e:
